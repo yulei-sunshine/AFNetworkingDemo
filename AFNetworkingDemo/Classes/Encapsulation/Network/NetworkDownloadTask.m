@@ -21,6 +21,8 @@
 @property (assign) BOOL resumeStatus;
 //文件地址
 @property (strong, nonatomic) NSURL *taskFilePath;
+//缓存路径
+@property (copy, nonatomic) NSString *taskCachePath;
 //下载信息缓存地址
 @property (copy, nonatomic) NSString *taskDownloadCachePath;
 //文件缓存地址
@@ -36,16 +38,6 @@
 
 #pragma mark - Private Interface
 
-//判断下载信息缓存是否存在
-- (BOOL)resumeDataExists {
-    return [[LocalFileManager manager] isExistFile:self.taskDownloadCachePath];
-}
-
-//判断文件缓存是否存在
-- (BOOL)resumeFileExists {
-    return [[LocalFileManager manager] isExistFile:self.taskResumeCachePath];
-}
-
 //修改缓存数据
 - (BOOL)modifyResumeDataLocalPath {
     if (!self.resumeStatus) {
@@ -56,14 +48,11 @@
         }
     }
 
-    if (![self resumeDataExists]) {
+    //判断是否存在下载数据缓存文件
+    if (![[LocalFileManager manager] isExistFile:self.taskDownloadCachePath]) {
         return NO;
     }
-    
-    if (![self resumeFileExists]) {
-        return NO;
-    }
-    
+
     NSError *error;
     NSData *resumeData = [NSData dataWithContentsOfFile:self.taskDownloadCachePath
                                                 options:NSDataReadingMappedIfSafe
@@ -79,38 +68,53 @@
                                                                                error:&error_dict];
     NSLog(@"tmp dict is %@",tmpDict);
     NSLog(@"dict error is %@",[error_dict localizedDescription]);
-//    if (error_dict == nil) {
-//        //3.0版本后使用
-//        NSString *resumeTmpFileName = [tmpDict objectForKey:@"NSURLSessionResumeInfoTempFileName"];
-//        if (resumeTmpFileName != nil) {
-//            NSString *resumeTmpPath = [[[LocalFileManager manager] tmpPath] stringByAppendingPathComponent:resumeTmpFileName];
-//            [];
-//        }
-//        
-//        
-//        
-//        
-//        //NSString *resumeLocalPath = [tmpDict objectForKey:@"NSURLSessionResumeInfoLocalPath"];
-//        NSString *resumeTmpFileName = [tmpDict objectForKey:@"NSURLSessionResumeInfoTempFileName"];
-//        
-//        
-//        
-//        
-//        NSString *resumeLocalPath = [tmpDict objectForKey:@"NSURLSessionResumeInfoLocalPath"];
-//        if (resumeLocalPath != nil) {
-//            [tmpDict setObject:[self resumeFilePath] forKey:@"NSURLSessionResumeInfoLocalPath"];
-//            
-//            NSError *error_data = nil;
-//            NSData *tmp_data = [NSPropertyListSerialization dataWithPropertyList:tmpDict
-//                                                                          format:NSPropertyListBinaryFormat_v1_0
-//                                                                         options:0
-//                                                                           error:&error_data];
-//            if (error_data == nil) {
-//                self.partialData = tmp_data;
-//                return YES;
-//            }
-//        }
-//    }
+    if (error_dict == nil) {
+        /*
+         注意：
+         当NSURLSessionResumeInfoVersion为1时，存在并使用NSURLSessionResumeInfoLocalPath；
+         当NSURLSessionResumeInfoVersion为2时，存在并使用NSURLSessionResumeInfoTempFileName；
+         */
+        NSString *resumeTmpFileName = [tmpDict objectForKey:@"NSURLSessionResumeInfoTempFileName"];
+        NSString *resumeLocalPath = [tmpDict objectForKey:@"NSURLSessionResumeInfoLocalPath"];
+        if (resumeTmpFileName != nil) {
+            //文件缓存地址
+            self.taskResumeCachePath = [self.taskCachePath stringByAppendingPathComponent:resumeTmpFileName];
+            if ([[LocalFileManager manager] isExistFile:self.taskResumeCachePath]) {
+                //tmp目录中缓存文件路径
+                NSString *resumeTmpPath = [[[LocalFileManager manager] tmpPath] stringByAppendingPathComponent:resumeTmpFileName];
+                NSFileManager *fileManager = [NSFileManager defaultManager];
+                BOOL status = [fileManager moveItemAtPath:self.taskResumeCachePath toPath:resumeTmpPath error:nil];
+                if (status) {
+                    NSError *error_data = nil;
+                    NSData *tmp_data = [NSPropertyListSerialization dataWithPropertyList:tmpDict
+                                                                                  format:NSPropertyListBinaryFormat_v1_0
+                                                                                 options:0
+                                                                                   error:&error_data];
+                    if (error_data == nil) {
+                        self.partialData = tmp_data;
+                        return YES;
+                    }
+                }
+            }
+        } else if (resumeLocalPath != nil) {
+            //文件缓存名称
+            NSString *resumeTmpName = [resumeLocalPath lastPathComponent];
+            //文件缓存地址
+            self.taskResumeCachePath = [self.taskCachePath stringByAppendingPathComponent:resumeTmpName];
+            //更改缓存数据NSURLSessionResumeInfoLocalPath保存的值，使其指向本地缓存文件路径
+            [tmpDict setObject:self.taskResumeCachePath forKey:@"NSURLSessionResumeInfoLocalPath"];
+            
+            NSError *error_data = nil;
+            NSData *tmp_data = [NSPropertyListSerialization dataWithPropertyList:tmpDict
+                                                                          format:NSPropertyListBinaryFormat_v1_0
+                                                                         options:0
+                                                                           error:&error_data];
+            if (error_data == nil) {
+                self.partialData = tmp_data;
+                return YES;
+            }
+        }
+    }
     return NO;
 }
 
@@ -127,18 +131,35 @@
                                                                                error:&error_dict];
     NSLog(@"tmp dict is %@",tmpDict);
     NSLog(@"dict error is %@",[error_dict localizedDescription]);
-//    if (error_dict == nil) {
-//        //NSString *resumeLocalPath = [tmpDict objectForKey:@"NSURLSessionResumeInfoLocalPath"];
-//        NSString *resumeTmpFileName = [tmpDict objectForKey:@"NSURLSessionResumeInfoTempFileName"];
-//        NSString *resumeTmpPath = [[[LocalFileManager manager] tmpPath] stringByAppendingPathComponent:resumeTmpFileName];
-//        NSLog(@"resumeTmpPath is %@",resumeTmpPath);
-//        if ([[LocalFileManager manager] isExistFile:resumeTmpPath]) {
-//            NSFileManager *fileManager = [NSFileManager defaultManager];
-//            return [fileManager moveItemAtPath:resumeTmpPath toPath:self.taskResumeCachePath error:nil];
-//        } else {
-//            return NO;
-//        }
-//    }
+    if (error_dict == nil) {
+        /*
+         注意：
+         当NSURLSessionResumeInfoVersion为1时，存在并使用NSURLSessionResumeInfoLocalPath；
+         当NSURLSessionResumeInfoVersion为2时，存在并使用NSURLSessionResumeInfoTempFileName；
+         */
+        NSString *resumeTmpFileName = [tmpDict objectForKey:@"NSURLSessionResumeInfoTempFileName"];
+        NSString *resumeLocalPath = [tmpDict objectForKey:@"NSURLSessionResumeInfoLocalPath"];
+        if (resumeTmpFileName != nil) {
+            //tmp目录中缓存文件路径
+            NSString *resumeTmpPath = [[[LocalFileManager manager] tmpPath] stringByAppendingPathComponent:resumeTmpFileName];
+            if ([[LocalFileManager manager] isExistFile:resumeTmpPath]) {
+                //文件缓存地址
+                self.taskResumeCachePath = [self.taskCachePath stringByAppendingPathComponent:resumeTmpFileName];
+                NSFileManager *fileManager = [NSFileManager defaultManager];
+                return [fileManager moveItemAtPath:resumeTmpPath toPath:self.taskResumeCachePath error:nil];
+            }
+        } else if (resumeLocalPath != nil) {
+            if ([[LocalFileManager manager] isExistFile:resumeLocalPath]) {
+                //文件缓存名称
+                NSString *resumeTmpName = [resumeLocalPath lastPathComponent];
+                //文件缓存地址
+                self.taskResumeCachePath = [self.taskCachePath stringByAppendingPathComponent:resumeTmpName];
+                resumeTmpName = nil;
+                NSFileManager *fileManager = [NSFileManager defaultManager];
+                return [fileManager moveItemAtPath:resumeLocalPath toPath:self.taskResumeCachePath error:nil];
+            }
+        }
+    }
     return NO;
 }
 
@@ -149,24 +170,29 @@
         return NO;
     }
     
+    self.partialData = resumeData;
     if (!self.resumeStatus) {
-        self.partialData = resumeData;
         return YES;
     }
-
-    self.partialData = resumeData;
     
-    NSLog(@"taskDownloadCachePath is %@",self.taskDownloadCachePath);
-    return [self.partialData writeToFile:self.taskDownloadCachePath atomically:YES];
+    BOOL status = [self.partialData writeToFile:self.taskDownloadCachePath atomically:YES];
+    if (status) {
+        //移动缓存文件
+        return [self moveResumeFile:resumeData];
+    }
+    return NO;
 }
 
 //清楚文件缓存
 - (void)cleanResumeData {
-    if ([self resumeDataExists]) {
+    //判断是否存在下载数据缓存文件
+    if ([[LocalFileManager manager] isExistFile:self.taskDownloadCachePath]) {
         [[LocalFileManager manager] deleteFileWithTargetPath:self.taskDownloadCachePath];
     }
 
-    if ([self resumeFileExists]) {
+    //判断是否存在缓存文件
+    if (self.taskResumeCachePath != nil
+        && [[LocalFileManager manager] isExistFile:self.taskResumeCachePath]) {
         [[LocalFileManager manager] deleteFileWithTargetPath:self.taskResumeCachePath];
     }
 
@@ -241,13 +267,12 @@
         self.taskFilePath = [NSURL fileURLWithPath:_filePath];
         self.resumeStatus = _status;
         self.partialData = nil;
-
+        self.taskCachePath = [[LocalFileManager manager] cacheFilePath];
+        self.taskResumeCachePath = nil;
+        
         NSString *resumeCacheName = [_request.URL.absoluteString MD5Hash];
-        NSString *resumeCachePath = [[[LocalFileManager manager] cacheFilePath] stringByAppendingPathComponent:resumeCacheName];
-        self.taskDownloadCachePath = resumeCachePath;
-        self.taskResumeCachePath = [resumeCachePath stringByAppendingPathExtension:@"tmp"];
+        self.taskDownloadCachePath = [self.taskCachePath stringByAppendingPathComponent:resumeCacheName];
         resumeCacheName = nil;
-        resumeCachePath = nil;
     }
     return self;
 }
@@ -309,11 +334,6 @@
     if (self.downloadTask.state == NSURLSessionTaskStateRunning) {
         if (self.resumeStatus) {
             [self.downloadTask cancelByProducingResumeData:^(NSData *resumeData) {
-                //移动缓存文件
-                if (self.resumeStatus && ![self resumeFileExists]) {
-                    [self moveResumeFile:resumeData];
-                }
-                
                 //保存缓存
                 [self saveResumeData:resumeData];
             }];

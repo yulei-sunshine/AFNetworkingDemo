@@ -97,7 +97,7 @@
                     parameters:(NSDictionary *)parameters
                        success:(void (^)(id responseObject))success
                        failure:(void (^)(NSError *error))failure {
-    return [self POST:URLString parameters:parameters timeInterval:30 success:success failure:failure];
+    return [self POST:URLString parameters:parameters timeoutInterval:30 success:success failure:failure];
 }
 
 //post方法，超时操作

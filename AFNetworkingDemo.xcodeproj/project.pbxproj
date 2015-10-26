@@ -113,7 +113,6 @@
 			isa = PBXGroup;
 			children = (
 				848CF63F1BDE2A1D00AEA042 /* Encapsulation */,
-				848CF6481BDE2A1D00AEA042 /* Expand */,
 				848CF64E1BDE2A1D00AEA042 /* Manager */,
 				848CF6511BDE2A1D00AEA042 /* Module */,
 				848CF6561BDE2A1D00AEA042 /* Tools */,
@@ -141,53 +140,6 @@
 				848CF6471BDE2A1D00AEA042 /* NetworkUploadTask.m */,
 			);
 			path = Network;
-			sourceTree = "<group>";
-		};
-		848CF6481BDE2A1D00AEA042 /* Expand */ = {
-			isa = PBXGroup;
-			children = (
-				848CF6491BDE2A1D00AEA042 /* Package */,
-				848CF64B1BDE2A1D00AEA042 /* Vendor */,
-			);
-			path = Expand;
-			sourceTree = "<group>";
-		};
-		848CF6491BDE2A1D00AEA042 /* Package */ = {
-			isa = PBXGroup;
-			children = (
-				848CF64A1BDE2A1D00AEA042 /* Network */,
-			);
-			path = Package;
-			sourceTree = "<group>";
-		};
-		848CF64A1BDE2A1D00AEA042 /* Network */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Network;
-			sourceTree = "<group>";
-		};
-		848CF64B1BDE2A1D00AEA042 /* Vendor */ = {
-			isa = PBXGroup;
-			children = (
-				848CF64C1BDE2A1D00AEA042 /* AFNetworking */,
-				848CF64D1BDE2A1D00AEA042 /* UIKit+AFNetworking */,
-			);
-			path = Vendor;
-			sourceTree = "<group>";
-		};
-		848CF64C1BDE2A1D00AEA042 /* AFNetworking */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = AFNetworking;
-			sourceTree = "<group>";
-		};
-		848CF64D1BDE2A1D00AEA042 /* UIKit+AFNetworking */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = "UIKit+AFNetworking";
 			sourceTree = "<group>";
 		};
 		848CF64E1BDE2A1D00AEA042 /* Manager */ = {

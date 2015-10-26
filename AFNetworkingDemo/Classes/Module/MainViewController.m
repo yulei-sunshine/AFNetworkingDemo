@@ -24,6 +24,8 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
+    
+    [self layoutSubviews];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -31,13 +33,7 @@
     // Dispose of any resources that can be recreated.
 }
 
-- (void)viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:animated];
-    
-    [self showContentView];
-}
-
-- (void)showContentView {
+- (void)layoutSubviews {
     UIButton *button_start = [[UIButton alloc] initWithFrame:CGRectMake(0, 80.0f, CGRectGetWidth(self.view.bounds), 62.0f)];
     [button_start setBackgroundColor:[UIColor grayColor]];
     [button_start setTitle:@"开始" forState:UIControlStateNormal];
